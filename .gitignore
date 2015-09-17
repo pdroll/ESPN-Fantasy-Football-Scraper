@@ -2,10 +2,10 @@
 logs
 *.log
 npm-debug.log*
+phantomjsdriver.log*
 
 # Dependency directory
-# https://docs.npmjs.com/misc/faq#should-i-check-my-node-modules-folder-into-git
 node_modules
 
- phantomjsdriver.log
- .DS_Store
+# OS Files
+.DS_Store
