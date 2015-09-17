@@ -30,7 +30,7 @@ var overrideProjections = argv.overrideProjections;
 // Before we get going, connect to Mongo
 MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 	if(err) throw err;
-	var Collection = db.collection('test');
+	var Collection = db.collection('games');
 	var gamesSaved = 0;
 	var gameCount;
 
