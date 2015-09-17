@@ -47,16 +47,17 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 	teamMap.Curt = 'curtis';
 	teamMap.Boss = 'pj';
 
-	// Set Screenshot filename
+	// Set timestamp, for screenshot filenames
 	var date = new Date();
 	date.setTime(Date.now());
-	var filename = 'week' + week + '_' + date.getFullYear() + (date.getMonth() + 1) + '' + date.getDate() + '' + '-' + date.getHours() + '' + date.getMinutes() + '' + date.getSeconds() + '.png';
+	var timestamp =  '' + date.getFullYear() + (date.getMonth() + 1) + '' + date.getDate() + '' + '-' + date.getHours() + '' + date.getMinutes() + '' + date.getSeconds();
 
+	console.log('Requesting main scoreboard page...');
 	processWebpage(
 		'http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueId + '&matchupPeriodId=' + week,
 		'#scoreboardMatchups',
 		parseHTML,
-		filename
+		('week' + week + '_' + timestamp + '.png')
 	);
 
 	function parseHTML(html) {
@@ -72,6 +73,8 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 			var gameId = { w : week, g : gameNumber};
 			var scores = [];
 
+			var boxScorePath = $game.find('.boxscoreLinks a').first().attr('href');
+
 			var $scoringDetails = $game.find('.scoringDetails');
 			var $scoringAbbrs = $scoringDetails.find('td.abbrev');
 			var $scoringLabels = $scoringDetails.find('td.labels');
@@ -81,11 +84,12 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 			var teamIx = 0;
 
 			$teams.each(function(){
-				var $team = $(this);
-				var teamAbbr = $team.find('.abbrev').text().replace(/[()]/g, '');
-				var teamName = teamMap[teamAbbr];
-				var projectedIx =  $scoringLabels.eq(teamIx).find('[title="Projected Total"]').index();
-				var winner = false;
+				var $team          = $(this);
+				var teamAbbr       = $team.find('.abbrev').text().replace(/[()]/g, '');
+				var teamName       = teamMap[teamAbbr];
+				var fullTeamName   = $team.find('div.name > a').text();
+				var projectedIx    = $scoringLabels.eq(teamIx).find('[title="Projected Total"]').index();
+				var winner         = false;
 				var projectedScore = null;
 				var totalScore;
 				var line;
@@ -123,18 +127,52 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 				}
 
 				scores.push({
-					team   : teamName,
-					proj   : projectedScore,
-					actual : totalScore,
-					line   : line,
-					winner : winner
+					_fullTeamName : fullTeamName,
+					team          : teamName,
+					proj          : projectedScore,
+					actual        : totalScore,
+					line          : line,
+					winner        : winner
 				});
 
 				teamIx++;
 			});
 
-			saveGame(gameId, scores);
+			console.log('Requesting game ' + gameNumber +' detail page...');
+			processWebpage(
+				'http://games.espn.go.com' + boxScorePath,
+				'.games-fullcol',
+				function(detailHTML){
+					var $ = cheerio.load(detailHTML);
+					var $teamDetails = $('.games-fullcol').find('.playerTableTable');
 
+					$teamDetails.each(function(){
+						$table = $(this);
+						var tableHeaderText = $table.find('.playertableTableHeader td').text();
+
+						scores.forEach(function(score){
+							if(tableHeaderText.indexOf(score._fullTeamName) >= 0){
+								var $playerRow = $table.find('.pncPlayerRow');
+								var defenseTotal = 0;
+								$playerRow.each(function(){
+									var $row = $(this);
+									var $cells = $row.find('> td');
+									var position = $cells.first().text();
+									var points = parseFloat($cells.last().text());
+									if(position == 'DP') {
+										defenseTotal += points;
+									}
+								});
+								score.adjustedTotal = score.actual - defenseTotal;
+							}
+						});
+					});
+					saveGame(gameId, scores);
+				},
+				('week' + week + '_game' + gameNumber + '_'+ timestamp + '.png')
+			);
+
+			// saveGame(gameId, scores);
 			gameNumber++;
 		});
 	}
@@ -158,6 +196,8 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 
 		scores.forEach(function(s){
 			var obj = {};
+			var adjustedTotal = parseFloat(s.adjustedTotal);
+			obj.adjustedTotal = adjustedTotal ? adjustedTotal : null;
 			obj.team = s.team;
 			obj.actual = parseFloat(s.actual);
 			obj.proj = s.proj ? parseFloat(s.proj) : null;
@@ -205,6 +245,10 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 					// Update Game's actual Score
 					console.log('Updating acutal week ' + week + ' score for ' + gameScore.team);
 					gameScore.actual = parseFloat(score.actual);
+
+					console.log('Updating adjusted week ' + week + ' total for ' + gameScore.team);
+					var adjustedTotal = parseFloat(score.adjustedTotal);
+					gameScore.adjustedTotal = adjustedTotal ? adjustedTotal : null;
 				}
 			});
 		});

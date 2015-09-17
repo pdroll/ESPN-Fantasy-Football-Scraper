@@ -12,7 +12,8 @@ db.games.aggregate([
     	team : '$scores.team',
     	projected : '$scores.proj',
     	actual : '$scores.actual',
-    	diff : { $subtract : ['$scores.actual', '$scores.proj'] }
+		adjusted : '$scores.adjustedTotal',
+    	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
     }},
     {$sort : { diff : -1 }}
 ]);
@@ -22,7 +23,7 @@ db.games.aggregate([
     {$unwind: '$scores'},
     {$project: {
     	_id  : 0,
-    	diff : { $subtract : ['$scores.actual', '$scores.proj'] }
+    	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
     }},
     {$group: {
     	_id : null,
