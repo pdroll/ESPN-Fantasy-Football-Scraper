@@ -1,19 +1,23 @@
-use ffb;
+//
+// To run, use the following command
+// `cat stats.js | mongo`
 
-// db.moosepaws.aggregate([
-//     {$match: {'_id.w' :  1}},
-//     {$unwind: '$scores'},
-//     {$project: {
-//     	_id  : 0,
-//     	team : '$scores.team',
-//     	projected : '$scores.proj',
-//     	actual : '$scores.actual',
-//     	diff : { $subtract : ['$scores.actual', '$scores.proj'] }
-//     }},
-//     {$sort : { diff : -1 }}
-// ]);
+use moosepaws;
 
-db.moosepaws.aggregate([
+db.games.aggregate([
+    {$match: {'_id.w' :  1}},
+    {$unwind: '$scores'},
+    {$project: {
+    	_id  : 0,
+    	team : '$scores.team',
+    	projected : '$scores.proj',
+    	actual : '$scores.actual',
+    	diff : { $subtract : ['$scores.actual', '$scores.proj'] }
+    }},
+    {$sort : { diff : -1 }}
+]);
+
+db.games.aggregate([
     {$match: {'_id.w' :  1}},
     {$unwind: '$scores'},
     {$project: {

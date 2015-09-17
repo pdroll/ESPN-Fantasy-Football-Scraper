@@ -1,7 +1,7 @@
 /*
 *	To run, use the following commands
 *	`npm install`
-*	`node fetch.js`
+*	`node fetch.js --week WEEK_NUMBER [--overrideProjections]`
  */
 
 var MongoClient = require('mongodb').MongoClient;
@@ -9,28 +9,32 @@ var argv        = require('minimist')(process.argv.slice(2));
 var webdriverio = require('webdriverio');
 var cheerio     = require('cheerio');
 
+
+//
+// Parse Arguments
+
+// Get Week Number. Stop if no week is given.
+var week = parseInt(argv.week, 10);
+if(!week){
+	throw('Please specify a week to fetch, using the `--week` flag.');
+}
+
+// Get League ID. Default to Moosepaws
+var leagueId = parseInt(argv.league, 10);
+if(!leagueId) {
+	leagueId = 571408;
+}
+
+// Check for the Save Projections flag
+var overrideProjections = argv.overrideProjections;
+
 // Before we get going, connect to Mongo
-MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
+MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 	if(err) throw err;
-	var Collection = db.collection('moosepaws');
+	var Collection = db.collection('games');
+	var gamesSaved = 0;
+	var gameCount;
 
-	//
-	// Parse Arguments
-
-	// Get Week Number. Stop if no week is given.
-	var week = parseInt(argv.week, 10);
-	if(!week){
-		throw('Please specify a week to fetch, using the `--week` flag.');
-	}
-
-	// Get League ID. Default to Moosepaws
-	var leagueId = parseInt(argv.league, 10);
-	if(!leagueId) {
-		leagueId = 571408;
-	}
-
-	// Check for the Save Projections flag
-	var overrideProjections = argv.overrideProjections;
 
 	// Set Screenshot filename
 	var date = new Date();
@@ -51,13 +55,15 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 	teamMap.Curt = 'curtis';
 	teamMap.Boss = 'pj';
 
+	var webDriverConfig = {
+		desiredCapabilities: {
+			browserName: 'phantomjs'
+		}
+	};
+
 	// Load fantasy football scoreboard page
 	webdriverio
-		.remote({
-			desiredCapabilities: {
-				browserName: 'phantomjs'
-			}
-		})
+		.remote(webDriverConfig)
 		.init()
 		.url('http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueId + '&matchupPeriodId=' + week)
 		// Save Screenshot of page for reference
@@ -71,6 +77,8 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 		var $ = cheerio.load(html);
 		var $games = $('#scoreboardMatchups').find('table.matchup');
 		var gameNumber = 1;
+
+		gameCount = $games.length;
 
 		$games.each(function(){
 			var $game = $(this);
@@ -90,8 +98,10 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 				var teamAbbr = $team.find('.abbrev').text().replace(/[()]/g, '');
 				var teamName = teamMap[teamAbbr];
 				var projectedIx =  $scoringLabels.eq(teamIx).find('[title="Projected Total"]').index();
+				var winner = false;
 				var projectedScore = null;
 				var totalScore;
+				var line;
 
 				// Quick Sanity Check
 				if($scoringAbbrs.eq(teamIx).text() !== teamAbbr) {
@@ -104,6 +114,9 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 				// Get Total Score
 				totalScore = $team.siblings('td.score').text();
 
+				// Check if this team Won
+				winner = $team.siblings('td.score').is('.winning');
+
 				// Get Projected Score
 				projectedIx =  $scoringLabels.eq(teamIx).find('[title="Projected Total"]').index();
 
@@ -113,10 +126,21 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 					projectedScore = $scoringVals.eq(teamIx).find('> div').eq(projectedIx).text();
 				}
 
+				// Get Game Line
+				lineIx =  $scoringLabels.eq(teamIx).find('[title="Game Line"]').index();
+
+				if(lineIx < 0) {
+					console.log('Line could not be found for this game.');
+				} else {
+					line = $scoringVals.eq(teamIx).find('> div').eq(lineIx).text();
+				}
+
 				scores.push({
 					team   : teamName,
 					proj   : projectedScore,
-					actual : totalScore
+					actual : totalScore,
+					line   : line,
+					winner : winner
 				});
 
 				teamIx++;
@@ -150,6 +174,8 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 			obj.team = s.team;
 			obj.actual = parseFloat(s.actual);
 			obj.proj = s.proj ? parseFloat(s.proj) : null;
+			obj.line = parseFloat(s.line);
+			obj.winner = s.winner;
 			gameObj.scores.push(obj);
 		});
 
@@ -159,6 +185,11 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 			} else {
 				console.log('Inserted Game!');
 				console.log(gameObj);
+
+				gamesSaved++;
+				if(gamesSaved >= gameCount){
+					db.close();
+				}
 			}
 		});
 	}
@@ -168,9 +199,14 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 		scores.forEach(function(score){
 			game.scores.forEach(function(gameScore){
 				if(score.team === gameScore.team){
-					// Update Game's actual Score
-					console.log('Updating acutal week ' + week + ' score for ' + gameScore.team);
-					gameScore.actual = parseFloat(score.actual);
+					// Update winner flag
+					gameScore.winner = score.winner;
+
+					// Update Game's Line
+					if(overrideProjections && score.line){
+						console.log('Updating week ' + week + ' line for ' + gameScore.team);
+						gameScore.line = parseFloat(score.line);
+					}
 
 					// Only update game's projected score
 					// if that option is explicitly passed in
@@ -178,6 +214,10 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 						console.log('Updating projected week ' + week + ' score for ' + gameScore.team);
 						gameScore.proj = parseFloat(score.proj);
 					}
+
+					// Update Game's actual Score
+					console.log('Updating acutal week ' + week + ' score for ' + gameScore.team);
+					gameScore.actual = parseFloat(score.actual);
 				}
 			});
 		});
@@ -188,6 +228,11 @@ MongoClient.connect('mongodb://localhost:27017/ffb', function(err, db) {
 			} else {
 				console.log('Game Updated!');
 				console.log(game);
+
+				gamesSaved++;
+				if(gamesSaved >= gameCount){
+					db.close();
+				}
 			}
 		});
 	}
