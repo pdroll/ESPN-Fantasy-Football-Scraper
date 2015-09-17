@@ -4,11 +4,10 @@
 *	`node fetch.js --week WEEK_NUMBER [--overrideProjections]`
  */
 
-var MongoClient = require('mongodb').MongoClient;
-var argv        = require('minimist')(process.argv.slice(2));
-var webdriverio = require('webdriverio');
-var cheerio     = require('cheerio');
-
+var MongoClient    = require('mongodb').MongoClient;
+var argv           = require('minimist')(process.argv.slice(2));
+var cheerio        = require('cheerio');
+var processWebpage = require('./helpers/processwebpage.js');
 
 //
 // Parse Arguments
@@ -31,16 +30,9 @@ var overrideProjections = argv.overrideProjections;
 // Before we get going, connect to Mongo
 MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 	if(err) throw err;
-	var Collection = db.collection('games');
+	var Collection = db.collection('test');
 	var gamesSaved = 0;
 	var gameCount;
-
-
-	// Set Screenshot filename
-	var date = new Date();
-	date.setTime(Date.now());
-	var filename = 'week' + week + '_' + date.getFullYear() + (date.getMonth() + 1) + '' + date.getDate() + '' + '-' + date.getHours() + '' + date.getMinutes() + '' + date.getSeconds() + '.png';
-
 
 	// Map Team abbreviations to Names
 	var teamMap  = [];
@@ -55,22 +47,17 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 	teamMap.Curt = 'curtis';
 	teamMap.Boss = 'pj';
 
-	var webDriverConfig = {
-		desiredCapabilities: {
-			browserName: 'phantomjs'
-		}
-	};
+	// Set Screenshot filename
+	var date = new Date();
+	date.setTime(Date.now());
+	var filename = 'week' + week + '_' + date.getFullYear() + (date.getMonth() + 1) + '' + date.getDate() + '' + '-' + date.getHours() + '' + date.getMinutes() + '' + date.getSeconds() + '.png';
 
-	// Load fantasy football scoreboard page
-	webdriverio
-		.remote(webDriverConfig)
-		.init()
-		.url('http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueId + '&matchupPeriodId=' + week)
-		// Save Screenshot of page for reference
-		.saveScreenshot('screenshots/' + filename)
-		// Get HTML so we can scrape it for scores
-		.getHTML('#scoreboardMatchups').then(parseHTML)
-		.end();
+	processWebpage(
+		'http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueId + '&matchupPeriodId=' + week,
+		'#scoreboardMatchups',
+		parseHTML,
+		filename
+	);
 
 	function parseHTML(html) {
 		// Parse Markup with Cheerio
