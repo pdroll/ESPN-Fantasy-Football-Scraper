@@ -10,5 +10,3 @@ node_modules
 # OS Files
 .DS_Store
 
-# Screenshots
-screenshots/*
