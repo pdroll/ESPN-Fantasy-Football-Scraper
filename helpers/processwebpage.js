@@ -1,4 +1,6 @@
 var webdriverio = require('webdriverio');
+var mkdir       = require('./mkdir');
+var path 		= require('path');
 /**
  * Use webdriver.io to request a webpage, optionally
  * take a screenshot, then pass resulting HTML to a callback
@@ -17,6 +19,13 @@ var processWebpage = function(url, section, callback, screenshot){
 	};
 
 	if(screenshot) {
+		var directories = screenshot.split(path.sep);
+		// Remove filename
+		directories.pop();
+		// Add screenshots dir
+		directories.unshift('screenshots');
+		mkdir(directories.join(path.sep));
+
 		webdriverio.remote(webDriverConfig).init().url(url)
 			// Save Screenshot of page for reference
 			.saveScreenshot('screenshots/' + screenshot)

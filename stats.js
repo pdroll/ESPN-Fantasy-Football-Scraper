@@ -1,6 +1,6 @@
 //
 // To run, use the following command
-// `cat stats.js | mongo moosepaws`
+// `cat stats.js | mongo DB_NAME`
 
 var week = 1;
 

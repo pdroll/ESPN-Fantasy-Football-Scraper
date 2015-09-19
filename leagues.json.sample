@@ -1,0 +1,24 @@
+{
+	"NAME_OF_LEAGUE": {
+		"dbName" : "MONGODB_DB_NAME",
+		"leagueId" : 12345,
+		"teamMap" : {
+			"ADAM" : "Adam",
+			"WOOT" : "Joe",
+			"JOHN" : "John",
+			"GB"   : "Sean",
+		}
+	},
+
+	"NAME_OF_LEAGUE_2" : {
+		"dbName" : "MONGODB_DB_NAME",
+		"leagueId" : 54321,
+		"teamMap" : {
+			"N8"   : "Nate",
+			"PETE" : "Pete",
+			"ASDF" : "Adam",
+			"Foo"  : "Mark",
+			"ALEX" : "Alex"
+		}
+	}
+}

@@ -1,7 +1,7 @@
 {
   "name": "ffbstats",
-  "version": "0.0.0",
-  "description": "FFB Moosepaws stats",
+  "version": "0.1.0",
+  "description": "ESPN Fantasy Football Data Scraper",
   "main": "fetch.js",
   "dependencies": {
     "cheerio": "^0.19.0",

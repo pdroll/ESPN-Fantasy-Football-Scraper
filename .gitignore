@@ -10,3 +10,5 @@ node_modules
 # OS Files
 .DS_Store
 
+# Config File
+leagues.json

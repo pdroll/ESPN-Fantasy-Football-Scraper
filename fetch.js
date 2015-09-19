@@ -1,16 +1,29 @@
 /*
 *	To run, use the following commands
 *	`npm install`
-*	`node fetch.js --week WEEK_NUMBER [--overrideProjections]`
+*	`node fetch.js --league LEAGUE_KEY --week WEEK_NUMBER [--overrideProjections] [--mongoUrl localhost] [--mongoPort 27017] [--testRun]`
  */
 
 var MongoClient    = require('mongodb').MongoClient;
 var argv           = require('minimist')(process.argv.slice(2));
 var cheerio        = require('cheerio');
 var processWebpage = require('./helpers/processwebpage.js');
+var leagues        = require('./leagues.json');
 
 //
 // Parse Arguments
+
+// Get the league config obj
+var league = argv.league;
+var leagueObj = leagues[league];
+if(!league || !leagueObj){
+	console.log('Please specify a league using the `--league` flag.');
+	console.log('The following leagues are available:');
+	for(var l in leagues){
+		console.log(l);
+	}
+	throw('Please specify a league using the `--league` flag.');
+}
 
 // Get Week Number. Stop if no week is given.
 var week = parseInt(argv.week, 10);
@@ -18,34 +31,34 @@ if(!week){
 	throw('Please specify a week to fetch, using the `--week` flag.');
 }
 
-// Get League ID. Default to Moosepaws
-var leagueId = parseInt(argv.league, 10);
-if(!leagueId) {
-	leagueId = 571408;
+// Get URL of MongoDB connection
+var mongoUrl = argv.mongoUrl;
+if(!mongoUrl){
+	mongoUrl = 'localhost';
+}
+
+// Get Port of MongoDB connection
+var mongoPort = argv.mongoPort;
+if(!mongoPort){
+	mongoPort = '27017';
+}
+
+// Get Port of MongoDB connection
+var testRun = argv.testRun;
+var collectionName = 'games';
+if(testRun){
+	collectionName = 'test';
 }
 
 // Check for the Save Projections flag
 var overrideProjections = argv.overrideProjections;
 
 // Before we get going, connect to Mongo
-MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
+MongoClient.connect('mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.dbName, function(err, db) {
 	if(err) throw err;
-	var Collection = db.collection('games');
+	var Collection = db.collection(collectionName);
 	var gamesSaved = 0;
 	var gameCount;
-
-	// Map Team abbreviations to Names
-	var teamMap  = [];
-	teamMap.Trik = 'pat';
-	teamMap.Pete = 'pete';
-	teamMap.$$$$ = 'tyler';
-	teamMap.GB   = 'sean';
-	teamMap.JNel = 'nelson';
-	teamMap.ELW  = 'clinton';
-	teamMap.ERIC = 'eric';
-	teamMap.LION = 'devan';
-	teamMap.Curt = 'curtis';
-	teamMap.Boss = 'pj';
 
 	// Set timestamp, for screenshot filenames
 	var date = new Date();
@@ -54,10 +67,10 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 
 	console.log('Requesting main scoreboard page...');
 	processWebpage(
-		'http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueId + '&matchupPeriodId=' + week,
+		'http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueObj.leagueId + '&matchupPeriodId=' + week,
 		'#scoreboardMatchups',
 		parseHTML,
-		('week' + week + '_' + timestamp + '.png')
+		(leagueObj.dbName + '/week' + week + '_' + timestamp + '.png')
 	);
 
 	function parseHTML(html) {
@@ -86,7 +99,7 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 			$teams.each(function(){
 				var $team          = $(this);
 				var teamAbbr       = $team.find('.abbrev').text().replace(/[()]/g, '');
-				var teamName       = teamMap[teamAbbr];
+				var teamName       = leagueObj.teamMap[teamAbbr];
 				var fullTeamName   = $team.find('div.name > a').text();
 				var projectedIx    = $scoringLabels.eq(teamIx).find('[title="Projected Total"]').index();
 				var winner         = false;
@@ -112,7 +125,7 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 				projectedIx =  $scoringLabels.eq(teamIx).find('[title="Projected Total"]').index();
 
 				if(projectedIx < 0) {
-					console.log('Projected totals are no longer available for this game.');
+					console.log('Projected totals are no longer available for game ' + gameNumber);
 				} else {
 					projectedScore = $scoringVals.eq(teamIx).find('> div').eq(projectedIx).text();
 				}
@@ -121,7 +134,7 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 				lineIx =  $scoringLabels.eq(teamIx).find('[title="Game Line"]').index();
 
 				if(lineIx < 0) {
-					console.log('Line could not be found for this game.');
+					console.log('Line could not be found for game ' + gameNumber);
 				} else {
 					line = $scoringVals.eq(teamIx).find('> div').eq(lineIx).text();
 				}
@@ -169,7 +182,7 @@ MongoClient.connect('mongodb://localhost:27017/moosepaws', function(err, db) {
 					});
 					saveGame(gameId, scores);
 				},
-				('week' + week + '_game' + gameNumber + '_'+ timestamp + '.png')
+				(leagueObj.dbName + '/week' + week + '_game' + gameNumber + '_'+ timestamp + '.png')
 			);
 
 			// saveGame(gameId, scores);
