@@ -1,7 +1,7 @@
 /*
 *	To run, use the following commands
 *	`npm install`
-*	`node fetch.js --league LEAGUE_KEY --week WEEK_NUMBER [--overrideProjections] [--mongoUrl localhost] [--mongoPort 27017] [--testRun]`
+*	`node fetch.js --league NAME_OF_LEAGUE --week WEEK_NUMBER [--overrideProjections] [--mongoUrl localhost] [--mongoPort 27017] [--testRun]`
  */
 
 var MongoClient    = require('mongodb').MongoClient;
