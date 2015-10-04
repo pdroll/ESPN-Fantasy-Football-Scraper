@@ -43,7 +43,7 @@ if(!mongoPort){
 	mongoPort = '27017';
 }
 
-// Get Port of MongoDB connection
+// Set Collection Name
 var testRun = argv.testRun;
 var collectionName = 'games';
 if(testRun){

@@ -2,7 +2,7 @@
 // To run, use the following command
 // `cat stats.js | mongo DB_NAME`
 
-var week = 1;
+var week = 3;
 
 '';
 '';
@@ -20,11 +20,12 @@ db.games.aggregate([
     {$unwind: '$scores'},
     {$project: {
     	_id  : 0,
+    	week : '$_id.w',
     	team : '$scores.team',
     	projected : '$scores.proj',
     	actual : '$scores.actual',
 		adjusted : '$scores.adjustedTotal',
-    	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
+    	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] },
     }},
     {$sort : { diff : -1 }}
 ]);
