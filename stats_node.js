@@ -173,7 +173,7 @@ var calculateGameResults = function(db, callback){
 			console.log('--------------------');
 			console.log('Projected Winner : ' + doc.projectedWinner);
 			console.log('Actual Winner : ' + doc.actualWinner);
-			console.log('Actual Winner with Spread: ' + doc.actualWinnerWithSpread);
+			console.log('Actual Winner with Spread : ' + doc.actualWinnerWithSpread);
 			console.log('Projection was ' + doc.wasProjectionCorrect);
 		} else if(!doc) {
 			if(callback){

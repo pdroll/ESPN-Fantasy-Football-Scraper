@@ -65,11 +65,24 @@ Port the `mongod` process is running on. Defaults to `27017`.
 When updating data for a week, this will override the projected score field. If used after that week's game have started, this will lead to innacurate data. Use with caution.
 
 
-## stats.js
-This a MongoDB shell script that uses the [aggreation pipeline](http://docs.mongodb.org/master/reference/method/db.collection.aggregate/) to generate some statistics.
+## stats_node.js
+This a script that uses the MongoDB [aggreation pipeline](http://docs.mongodb.org/master/reference/method/db.collection.aggregate/) to generate some statistics.
 
-If `mongod` is running, you could run it like:
+Once `mongod` is running, run the script like:
 
 ```
-$ cat stats.js | mongo MONGODB_DB_NAME
+$ node stats_node.js --league NAME_OF_LEAGUE --week 1
 ```
+### Options
+
+#### `--league`
+One of the `NAME_OF_LEAGUE` values from the `leagues.json`. Required.
+
+#### `--week`
+Which week to fetch data for. Required.
+
+#### `--mongoUrl`
+URL of the running `mongod` process. Defaults to `localhost`.
+
+#### `--mongoPort`
+Port the `mongod` process is running on. Defaults to `27017`.
