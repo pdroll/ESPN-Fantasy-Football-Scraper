@@ -79,6 +79,8 @@ var calculateTeamsVsProjections = function(db, callback){
 	var teamsVsProjectionsAggregate = [
 		{$match: {'_id.w' :  week}},
 		{$unwind: '$scores'},
+		// Remove games with incomplete data
+		{$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
 		{$project: {
 			_id  : 0,
 			week : '$_id.w',
@@ -118,6 +120,8 @@ var calculateTeamsVsProjections = function(db, callback){
 	var avgScoreAggregate = [
 	    {$match: {'_id.w' :  week}},
 	    {$unwind: '$scores'},
+	    // Remove games with incomplete data
+	    {$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
 	    {$project: {
 	    	_id  : 0,
 	    	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
@@ -231,12 +235,9 @@ var calculateProjectionPercentage = function(db, callback){
 
 var outcomeAggregate = [
 	{$match: {'_id.w' :  week}},
-	{$project: {
-		week : '$_id.w',
-		scores : 1,
-
-	}},
 	{$unwind: '$scores'},
+	// Remove games with incomplete data
+	{$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
 	{$group : {
 		_id : {g : '$_id.g', w: '$_id.w'},
 

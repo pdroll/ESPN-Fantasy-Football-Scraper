@@ -2,7 +2,7 @@
 // To run, use the following command
 // `cat stats.js | mongo DB_NAME`
 
-var week = 3;
+var week = 1;
 
 '';
 '';
@@ -16,8 +16,9 @@ var week = 3;
 '----------------------------';
 
 db.games.aggregate([
-    {$match: {'_id.w' :  week}},
+    // {$match: {'_id.w' :  week}},
     {$unwind: '$scores'},
+    {$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
     {$project: {
     	_id  : 0,
     	week : '$_id.w',
@@ -34,8 +35,9 @@ db.games.aggregate([
 'Average score vs. projection';
 '----------------------------';
 db.games.aggregate([
-    {$match: {'_id.w' :  week}},
+    // {$match: {'_id.w' :  week}},
     {$unwind: '$scores'},
+    {$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
     {$project: {
     	_id  : 0,
     	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
@@ -54,8 +56,9 @@ db.games.aggregate([
 'Projected winners vs actual winners';
 '-----------------------------------';
 db.games.aggregate([
-	{$match: {'_id.w' :  week}},
+	// {$match: {'_id.w' :  week}},
 	{$unwind: '$scores'},
+	{$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
 	{$group : {
 		_id : {g : '$_id.g', w: '$_id.w'},
 
@@ -70,7 +73,11 @@ db.games.aggregate([
 		homeLine : {$last : '$scores.line'}
 	}},
 	{$project: {
-		matchup : {$concat : ['$awayTeam', ' @ ', '$homeTeam']},
+		matchup : {$concat : [
+			'Week ',
+			{ "$substr": [ "$_id.w" , 0 , -1] },
+			' : ' ,'$awayTeam', ' @ ', '$homeTeam'
+		]},
 		projectedDiff : {$subtract : ['$awayProj', '$homeProj']},
 		actualDiff : {$subtract : ['$awayActual', '$homeActual']},
 		awayActualWithSpread : {$add : ['$awayActual', '$awayLine' ]},
