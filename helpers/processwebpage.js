@@ -12,12 +12,6 @@ var webshot     = require('webshot');
  */
 var processWebpage = function(url, callback, screenshot){
 
-	var webDriverConfig = {
-		desiredCapabilities: {
-			browserName: 'phantomjs'
-		}
-	};
-
 	if(screenshot) {
 		var directories = screenshot.split(path.sep);
 		// Remove filename
