@@ -34,11 +34,10 @@ Objet to store nice team names for each team in your league. Each team should be
 ## fetch.js
 This is the script that scrapes the ESPN pages and saves the data. It also will save a screenshot of every page scraped, for reference. See the `screenshots` directory in the project root.
 
-The script uses [webdriver.io](http://webdriver.io/) (for now), a [Selenium](http://www.seleniumhq.org/) wrapper, and thus Selenium server needs to be running before this script can run. See [Selenium-Standalone](https://www.npmjs.com/package/selenium-standalone) for a simple solution to this.
 
 Since the data is saved into a MongoDB, a `mongod` process needs to be running as well. You can optionaly specify a URL and Port to connect to a remote MongoDB instance.
 
-Once a Selenium and MongoDB servers are ready to go, run this script like:
+Once the MongoDB server is ready to go, run this script like:
 
 ```
 $ node fetch.js --league NAME_OF_LEAGUE --week 1
