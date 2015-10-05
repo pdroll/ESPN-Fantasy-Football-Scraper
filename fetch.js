@@ -68,7 +68,6 @@ MongoClient.connect('mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.db
 	console.log('Requesting main scoreboard page...');
 	processWebpage(
 		'http://games.espn.go.com/ffl/scoreboard?leagueId=' + leagueObj.leagueId + '&matchupPeriodId=' + week,
-		'#scoreboardMatchups',
 		parseHTML,
 		(leagueObj.dbName + '/week' + week + '_' + timestamp + '.png')
 	);
@@ -154,7 +153,6 @@ MongoClient.connect('mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.db
 			console.log('Requesting game ' + gameNumber +' detail page...');
 			processWebpage(
 				'http://games.espn.go.com' + boxScorePath,
-				'.games-fullcol',
 				function(detailHTML){
 					var $ = cheerio.load(detailHTML);
 					var $teamDetails = $('.games-fullcol').find('.playerTableTable');
