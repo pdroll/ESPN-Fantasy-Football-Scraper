@@ -134,9 +134,12 @@ db.tmpProjectedWinners.aggregate([
 		_id : '$wasProjectionCorrect',
 		count : {$sum : 1}
 	}},
+	{$sort : {
+		_id : 1
+	}},
 	{$group: {
 		_id : null,
-		correctIncorrect : {$addToSet : '$count'},
+		correctIncorrect : {$push : '$count'},
 	}},
 	{$unwind : '$correctIncorrect'},
 	{$group : {

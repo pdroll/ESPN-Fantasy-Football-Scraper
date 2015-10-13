@@ -1,7 +1,7 @@
 /*
 *	To run, use the following commands
 *	`npm install`
-*	`node stats.js --league NAME_OF_LEAGUE --week WEEK_NUMBER [--mongoUrl localhost] [--mongoPort 27017]`
+*	`node stats_node.js --league NAME_OF_LEAGUE --week WEEK_NUMBER [--mongoUrl localhost] [--mongoPort 27017]`
  */
 
 var MongoClient    = require('mongodb').MongoClient;
@@ -200,6 +200,9 @@ var calculateProjectionPercentage = function(db, callback){
 		{$group : {
 			_id : '$wasProjectionCorrect',
 			count : {$sum : 1}
+		}},
+		{$sort : {
+			_id : 1
 		}},
 		{$group: {
 			_id : null,

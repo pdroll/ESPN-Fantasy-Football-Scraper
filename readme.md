@@ -34,7 +34,6 @@ Objet to store nice team names for each team in your league. Each team should be
 ## fetch.js
 This is the script that scrapes the ESPN pages and saves the data. It also will save a screenshot of every page scraped, for reference. See the `screenshots` directory in the project root.
 
-
 Since the data is saved into a MongoDB, a `mongod` process needs to be running as well. You can optionaly specify a URL and Port to connect to a remote MongoDB instance.
 
 Once the MongoDB server is ready to go, run this script like:
@@ -67,6 +66,8 @@ When updating data for a week, this will override the projected score field. If 
 ## stats_node.js
 This a script that uses the MongoDB [aggreation pipeline](http://docs.mongodb.org/master/reference/method/db.collection.aggregate/) to generate some statistics.
 
+Currently calculates how accurate projections were on a team-by-team basis, and how often winners were correctly projected.
+
 Once `mongod` is running, run the script like:
 
 ```
@@ -78,7 +79,7 @@ $ node stats_node.js --league NAME_OF_LEAGUE --week 1
 One of the `NAME_OF_LEAGUE` values from the `leagues.json`. Required.
 
 #### `--week`
-Which week to fetch data for. Required.
+Which week to fetch data for. If not provided, will compile year-to-date stats.
 
 #### `--mongoUrl`
 URL of the running `mongod` process. Defaults to `localhost`.
