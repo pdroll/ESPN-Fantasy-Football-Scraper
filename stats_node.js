@@ -203,7 +203,7 @@ var calculateProjectionPercentage = function(db, callback){
 		}},
 		{$group: {
 			_id : null,
-			correctIncorrect : {$addToSet : '$count'},
+			correctIncorrect : {$push : '$count'},
 		}},
 		{$unwind : '$correctIncorrect'},
 		{$group : {
@@ -287,6 +287,7 @@ var outcomeAggregate = [
 		wasProjectionCorrect : {$cond : [{$eq : ['$projectedWinner', '$actualWinner']}, 'Correct', 'Incorrect']}
 	}},
 	{$sort: {
+		'_id.w' : 1,
 		'_id.g' : 1
 	}},
 	{$project : {
