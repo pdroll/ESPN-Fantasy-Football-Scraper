@@ -81,6 +81,12 @@ One of the `NAME_OF_LEAGUE` values from the `leagues.json`. Required.
 #### `--week`
 Which week to fetch data for. If not provided, will compile year-to-date stats.
 
+#### `--players`
+Run statistics on a per players basis, as opposed to each fantasy team.
+
+#### `--verbose`
+Show more in depth statistics.
+
 #### `--mongoUrl`
 URL of the running `mongod` process. Defaults to `localhost`.
 
