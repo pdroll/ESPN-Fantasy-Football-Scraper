@@ -43,11 +43,18 @@ if(!mongoPort){
 
 // Set Collection Name
 var testRun = argv.testRun;
-var collectionName = 'games';
+var gamesCollectionName = 'games';
+var playersCollectionName = 'players';
 if(testRun){
-	collectionName = 'test';
+	gamesCollectionName = 'test_games';
+	playersCollectionName = 'test_players';
 }
 
+// Include player stats?
+var runPlayerStats = argv.players;
+
+// Include player stats?
+var verbose = argv.verbose;
 
 // Before we get going, connect to Mongo
 MongoClient.connect('mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.dbName, function(err, db) {
@@ -67,15 +74,19 @@ MongoClient.connect('mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.db
 	console.log('');
 
 	// Start doing some calculations
-	calculateTeamsVsProjections(db, function(db){
-		calculateGameResults(db, function(db){
-			calculateProjectionPercentage(db);
+	if(runPlayerStats){
+		calculatePlayerStats(db);
+	} else {
+		calculateTeamsVsProjections(db, function(db){
+			calculateGameResults(db, function(db){
+				calculateProjectionPercentage(db);
+			});
 		});
-	});
+	}
 });
 
 var calculateTeamsVsProjections = function(db, callback){
-	var Games = db.collection(collectionName);
+	var Games = db.collection(gamesCollectionName);
 	var teamsVsProjectionsAggregate = [
 		{$match: {'_id.w' :  week}},
 		{$unwind: '$scores'},
@@ -100,11 +111,14 @@ var calculateTeamsVsProjections = function(db, callback){
 
 	var teamsVsProjections = Games.aggregate(teamsVsProjectionsAggregate);
 
-	console.log('Teams vs. projections');
-	console.log('=========================');
-	console.log('');
+	if(verbose){
+		console.log('Teams vs. projections');
+		console.log('=========================');
+		console.log('');
+	}
+
 	teamsVsProjections.each(function(err, doc){
-		if(!err && doc) {
+		if(!err && doc && verbose) {
 			var statStr = '';
 			console.log(doc.team + ', Week ' + doc.week);
 			console.log('------------');
@@ -118,22 +132,22 @@ var calculateTeamsVsProjections = function(db, callback){
 		}
 	});
 	var avgScoreAggregate = [
-	    {$match: {'_id.w' :  week}},
-	    {$unwind: '$scores'},
-	    // Remove games with incomplete data
-	    {$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
-	    {$project: {
-	    	_id  : 0,
-	    	diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
-	    }},
-	    {$group: {
-	    	_id : null,
-	    	'avg' : {$avg : '$diff'}
-	    }},
-	    {$project : {
-	    	_id : 0,
-	    	averageDiff : '$avg'
-	    }}
+			{$match: {'_id.w' :  week}},
+			{$unwind: '$scores'},
+			// Remove games with incomplete data
+			{$match : { $and : [{'scores.proj' : {$ne : null} }, {'scores.actual' : {$gt : 0}}]}},
+			{$project: {
+				_id  : 0,
+				diff : { $subtract : ['$scores.adjustedTotal', '$scores.proj'] }
+			}},
+			{$group: {
+				_id : null,
+				'avg' : {$avg : '$diff'}
+			}},
+			{$project : {
+				_id : 0,
+				averageDiff : '$avg'
+			}}
 	];
 
 	if(week === 'all'){
@@ -161,7 +175,7 @@ var calculateTeamsVsProjections = function(db, callback){
 };
 
 var calculateGameResults = function(db, callback){
-	var Games = db.collection(collectionName);
+	var Games = db.collection(gamesCollectionName);
 
 	console.log('');
 	console.log('');
@@ -171,7 +185,7 @@ var calculateGameResults = function(db, callback){
 	var correctGames = Games.aggregate(outcomeAggregate);
 
 	correctGames.each(function(err, doc){
-		if(!err && doc) {
+		if(!err && doc && verbose) {
 			console.log('');
 			console.log(doc.matchup);
 			console.log('--------------------');
@@ -190,7 +204,7 @@ var calculateGameResults = function(db, callback){
 };
 
 var calculateProjectionPercentage = function(db, callback){
-	var Games = db.collection(collectionName);
+	var Games = db.collection(gamesCollectionName);
 	console.log('');
 
 	var percentage = Games.aggregate(outcomeAggregate.concat([
@@ -234,6 +248,108 @@ var calculateProjectionPercentage = function(db, callback){
 			}
 		}
 	});
+};
+
+var calculatePlayerStats = function(db, callback){
+	var Players =  db.collection(playersCollectionName);
+	var groups = ['pos', 'slot', 'team', 'owner', 'homeAway'];
+	var gIx = 0;
+	var showResults = function(key, isLast){
+		var counter = 0;
+		var results = Players.aggregate(getPlayerStatsAggregate(key));
+		var title = '';
+		switch(key){
+			case 'pos' :
+				title = 'Position';
+			break;
+			case 'slot' :
+				title = 'Fanstasy Position';
+			break;
+			case 'team' :
+				title = 'NFL Team';
+			break;
+			case 'owner' :
+				title = 'Fantasy Owner';
+			break;
+			case 'homeAway' :
+				title = 'Home Or Away';
+			break;
+		}
+
+		results.each(function(err, doc){
+			if(!err && doc) {
+				if(counter === 0){
+					console.log('');
+					console.log('');
+					console.log('Player Performances vs Projections per ' + title);
+					console.log('===========================================');
+					console.log('');
+				}
+
+				console.log(doc._id + ' : ' + (doc.avgDiff > 0 ? '+' : '') + doc.avgDiff.toFixed(2));
+
+				if(verbose){
+					console.log('--------');
+					console.log('Max Score : '+ doc.maxScore +' | Min Score : '+ doc.minScore +' | Sample Size : '+ doc.count );
+					console.log('');
+				}
+
+				counter++;
+			} else if(!doc && isLast) {
+				db.close();
+			}
+		});
+		gIx++;
+
+		if(groups[gIx]){
+			showResults(groups[gIx], groups.length - 1 === gIx);
+		}
+	};
+
+	showResults(groups[gIx]);
+
+};
+
+var getPlayerStatsAggregate = function(group){
+	var arr = [
+		{$match: {'_id.w' :  week}},
+		{$match : { $and : [{'proj' : {$ne : null} }, {'actual' : {$gt : 0}}]}},
+		{$project : {
+			_id : 0,
+			player : '$name',
+			week : '$_id.w',
+			diff : { $subtract : ['$actual', '$proj'] },
+			proj : 1,
+			actual: 1,
+			owner: 1,
+			slot: 1,
+			pos: 1,
+			homeAway : 1,
+			opponent : 1,
+			team : 1
+		 }},
+		 {$group: {
+			_id : '$' + group,
+			maxScore : {$max : '$actual'},
+			minScore : {$min : '$actual'},
+			minDiff : {$min : '$diff'},
+			maxDiff : {$max : '$diff'},
+			avgDiff : {$avg : '$diff'},
+			count : {$sum : 1}
+		 }},
+		 {$match: {
+			count : {$gt : 1}
+		 }},
+		 {$sort : {
+			avgDiff : -1
+		 }}
+	];
+
+	if(week === 'all'){
+		arr.shift();
+	}
+
+	return arr;
 };
 
 var outcomeAggregate = [
@@ -306,3 +422,4 @@ var outcomeAggregate = [
 if(week === 'all'){
 	outcomeAggregate.shift();
 }
+
