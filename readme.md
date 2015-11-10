@@ -1,6 +1,6 @@
 # ESPN Fantasy Football Scraper
 
-Ever wonder how accurate projections for you fantasy football league are? Want to know how often your projected fantasy winners actually win? Now you can find answers to these questions and more.
+Ever wonder how accurate projections for your fantasy football league are? Want to know how often your projected fantasy winners actually win? Now you can find answers to these questions and more.
 
 Includes Node.js script to scrape ESPN's Fantasy Football league pages and save data to MongoDB.
 
