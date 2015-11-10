@@ -1,8 +1,10 @@
 # ESPN Fantasy Football Scraper
 
-Node.js script to scrape ESPN's Fantasy Football league pages and save data to MongoDB.
+Ever wonder how accurate projections for you fantasy football league are? Want to know how often your projected fantasy winners actually win? Now you can find answers to these questions and more.
 
-Also includes a script to generate statistics from the league data.
+Includes Node.js script to scrape ESPN's Fantasy Football league pages and save data to MongoDB.
+
+Also includes a script to generate statistics from the league data to answer.
 
 To get the most accurate data, this script should be run twice for each week of the fantasy football season:
 
