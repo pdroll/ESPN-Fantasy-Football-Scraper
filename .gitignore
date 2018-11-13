@@ -12,3 +12,6 @@ node_modules
 
 # Config File
 leagues.json
+
+# Data Output
+Seasons/
