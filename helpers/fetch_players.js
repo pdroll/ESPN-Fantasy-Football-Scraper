@@ -15,7 +15,7 @@ function fetchPlayers(db, opts, callback){
 
 	// Set up some variables
 	var Collection       = db.collection(collectionName);
-	var baseUrl          = 'http://games.espn.go.com';
+	var baseUrl          = 'http://games.espn.com';
 	var teamCount        = 0;
 	var playersPerTeam   = 0;
 	var projectionsSaved = 0;

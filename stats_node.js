@@ -57,20 +57,24 @@ var runPlayerStats = argv.players;
 var verbose = argv.verbose;
 
 // Before we get going, connect to Mongo
-MongoClient.connect('mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.dbName, function(err, db) {
+var mongodb = 'mongodb://' + mongoUrl + ':' + mongoPort +'/'+ leagueObj.dbName;
+//console.log(mongodb);
+
+MongoClient.connect(mongodb, function(err, db) {
 	if(err) throw err;
 
 	// Output header
+	console.log('<h1>Interstate Football Freaks ' + (new Date()).getFullYear() + '</h1>');
+	// console.log('');
+	console.log('<hr />');
 	console.log('');
+	console.log('<a href="index.php">Home</a>');
 	console.log('');
-	console.log('=========================');
 	if(week === 'all'){
-		console.log(' Year-to-date statistics');
+		console.log('<h1>Year-To-Date Statistics</h1>');
 	} else {
-		console.log('    Week ' + week + ' statistics');
+		console.log('<h1>Week ' + week + ' Statistics</h1>');
 	}
-	console.log('=========================');
-	console.log('');
 	console.log('');
 
 	// Start doing some calculations
@@ -112,25 +116,26 @@ var calculateTeamsVsProjections = function(db, callback){
 	var teamsVsProjections = Games.aggregate(teamsVsProjectionsAggregate);
 
 	if(verbose){
-		console.log('Teams vs. projections');
-		console.log('=========================');
-		console.log('');
+		console.log('<div id="tvp">');
+		console.log('<h2>Teams vs. Projections</h2>');
 	}
 
 	teamsVsProjections.each(function(err, doc){
 		if(!err && doc && verbose) {
 			var statStr = '';
-			console.log(doc.team + ', Week ' + doc.week);
-			console.log('------------');
-			statStr += 'Projected: ' + doc.projected + '; Actual: ' + doc.actual + '; ';
+			console.log('<div class="team">')
+			console.log('<h3>' + doc.team + ', Week ' + doc.week + '</h3>');
+			statStr += '<strong>Projected:</strong> ' + doc.projected + '<br /><strong>Actual:</strong> ' + doc.actual + '<br />';
 			if(doc.adjusted !== doc.actual) {
-				statStr += 'Adjusted: ' + doc.adjusted + '; ';
+				statStr += '<strong>Adjusted:</strong> ' + doc.adjusted + '<br />';
 			}
-			statStr += 'Diff: ' + (doc.diff > 0 ? '+' : '') + doc.diff.toFixed(2);
+			statStr += '<strong>Diff:</strong> ' + (doc.diff > 0 ? '+' : '') + doc.diff.toFixed(2);
 			console.log(statStr);
-			console.log('');
+			console.log('<hr />');
+			console.log('</div>');
 		}
 	});
+
 	var avgScoreAggregate = [
 			{$match: {'_id.w' :  week}},
 			{$unwind: '$scores'},
@@ -156,14 +161,13 @@ var calculateTeamsVsProjections = function(db, callback){
 
 	var avgScore = Games.aggregate(avgScoreAggregate);
 
-
 	avgScore.each(function(err, doc){
 		if(!err && doc) {
-			console.log('');
-			console.log('Average score vs. projection');
-			console.log('=========================');
-			console.log('');
-			console.log((doc.averageDiff > 0 ? '+' : '') + doc.averageDiff.toFixed(2));
+			console.log('</div>');
+
+			console.log('<div id="asvp">');
+			console.log('<h2>Average Score vs. Projection</h2>');
+			console.log('<h3>' + (doc.averageDiff > 0 ? '+' : '') + doc.averageDiff.toFixed(2) + '</h3>');
 		} else if(!doc) {
 			if(callback){
 				callback(db);
@@ -177,22 +181,22 @@ var calculateTeamsVsProjections = function(db, callback){
 var calculateGameResults = function(db, callback){
 	var Games = db.collection(gamesCollectionName);
 
-	console.log('');
-	console.log('');
-	console.log('How often was the outcome of the game correctly projected?');
-	console.log('==========================================================');
+	console.log('</div>');
+	console.log('<div id="corrproj">');
+	console.log('<h2>How often was the outcome of the game correctly projected?</h2>');
 
 	var correctGames = Games.aggregate(outcomeAggregate);
 
 	correctGames.each(function(err, doc){
 		if(!err && doc && verbose) {
-			console.log('');
-			console.log(doc.matchup);
-			console.log('--------------------');
-			console.log('Projected Winner : ' + doc.projectedWinner);
-			console.log('Actual Winner : ' + doc.actualWinner);
-			console.log('Actual Winner with Spread : ' + doc.actualWinnerWithSpread);
-			console.log('Projection was ' + doc.wasProjectionCorrect);
+			console.log('<div class="team">');
+			console.log('<h3>' + doc.matchup + '</h3>');
+			console.log('<strong>Projected Winner:</strong> ' + doc.projectedWinner + '<br />');
+			console.log('<strong>Actual Winner:</strong> ' + doc.actualWinner + '<br />');
+			console.log('<strong>Actual Winner with Spread:</strong> ' + doc.actualWinnerWithSpread + '<br />');
+			console.log('<strong>Projection was ' + doc.wasProjectionCorrect + '</strong>');
+			console.log('<hr />')
+			console.log('</div>');
 		} else if(!doc) {
 			if(callback){
 				callback(db);
@@ -238,8 +242,8 @@ var calculateProjectionPercentage = function(db, callback){
 
 	percentage.each(function(err, doc){
 		if(!err && doc) {
-			console.log('Projections were correct ' + doc.percentageCorrect.toFixed(2) + '% of the time.');
-			console.log('');
+			console.log('<strong>Projections were correct ' + doc.percentageCorrect.toFixed(2) + '% of the time.</strong>');
+			console.log('</div>');
 		} else if(!doc) {
 			if(callback){
 				callback(db);
@@ -279,20 +283,26 @@ var calculatePlayerStats = function(db, callback){
 		results.each(function(err, doc){
 			if(!err && doc) {
 				if(counter === 0){
-					console.log('');
-					console.log('');
+					//console.log('');
+					//console.log('');
+					console.log('<h2>');
 					console.log('Player Performances vs Projections per ' + title);
-					console.log('===========================================');
-					console.log('');
+					//console.log('===========================================');
+					console.log('</h2>');
 				}
 
-				console.log(doc._id + ' : ' + (doc.avgDiff > 0 ? '+' : '') + doc.avgDiff.toFixed(2));
+				console.log('<div class="team">')
+				console.log('<strong>' + doc._id + ':</strong> ' + (doc.avgDiff > 0 ? '+' : '') + doc.avgDiff.toFixed(2) +'<br />');
 
 				if(verbose){
-					console.log('--------');
-					console.log('Max Score : '+ doc.maxScore +' | Min Score : '+ doc.minScore +' | Sample Size : '+ doc.count );
-					console.log('');
+					//console.log('--------');
+					console.log('<strong>Max Score:</strong> '+ doc.maxScore +'<br />');
+					console.log('<strong>Min Score:</strong> '+ doc.minScore +'<br />');
+					console.log('<strong>Sample Size:</strong> '+ doc.count );
+					console.log('<hr />');
+					//console.log('');
 				}
+				console.log('</div>');
 
 				counter++;
 			} else if(!doc && isLast) {

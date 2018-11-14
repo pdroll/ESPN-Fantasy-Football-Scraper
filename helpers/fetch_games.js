@@ -24,7 +24,7 @@ function fetchGames(db, opts, callback){
 
 	console.log('Requesting main scoreboard page...');
 	processWebpage(
-		'http://games.espn.go.com/ffl/scoreboard?leagueId=' + opts.leagueObj.leagueId + '&matchupPeriodId=' + opts.week,
+		'http://games.espn.com/ffl/scoreboard?leagueId=' + opts.leagueObj.leagueId + '&matchupPeriodId=' + opts.week,
 		parseHTML,
 		(opts.leagueObj.dbName + '/week' + opts.week + '_' + timestamp + '.png')
 	);
@@ -109,7 +109,7 @@ function fetchGames(db, opts, callback){
 
 			console.log('Requesting game ' + gameNumber +' detail page...');
 			processWebpage(
-				'http://games.espn.go.com' + boxScorePath,
+				'http://games.espn.com' + boxScorePath,
 				function(detailHTML){
 					var $ = cheerio.load(detailHTML);
 					var $teamDetails = $('.games-fullcol').find('.playerTableTable');
